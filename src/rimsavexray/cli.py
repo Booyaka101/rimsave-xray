@@ -157,10 +157,23 @@ def run(args: argparse.Namespace) -> int:
     return 0
 
 
+def _pause_if_double_clicked(raw_argv: list[str]) -> None:
+    """Keep the console window open when the exe was started without
+    arguments (a double-click); anything with a real argv exits at once."""
+    if raw_argv:
+        return
+    try:
+        if sys.stdin is not None and sys.stdin.isatty():
+            input("\nPress Enter to close this window.")
+    except (EOFError, OSError):
+        pass
+
+
 def main(argv: list[str] | None = None) -> int:
     _utf8_stdout()
+    raw_argv = sys.argv[1:] if argv is None else list(argv)
     parser = build_parser()
-    args = parser.parse_args(argv)
+    args = parser.parse_args(raw_argv)
     try:
         return run(args)
     except UserError as exc:
@@ -172,6 +185,8 @@ def main(argv: list[str] | None = None) -> int:
     except OSError as exc:
         print(f"rimsavexray: {exc}", file=sys.stderr)
         return 1
+    finally:
+        _pause_if_double_clicked(raw_argv)
 
 
 if __name__ == "__main__":

@@ -123,6 +123,7 @@ def test_interactive_prompt_lists_saves_and_scans(monkeypatch, tmp_path, capsys)
     monkeypatch.setattr("sys.stdin", type("FakeStdin", (), {"isatty": lambda self: True})())
     answers = iter(["1"])
     monkeypatch.setattr("builtins.input", lambda _prompt: next(answers))
+    monkeypatch.setattr("rimsavexray.cli._pause_if_double_clicked", lambda raw: None)
     monkeypatch.chdir(tmp_path)
     code = main([])
     out = capsys.readouterr().out
@@ -132,6 +133,32 @@ def test_interactive_prompt_lists_saves_and_scans(monkeypatch, tmp_path, capsys)
     assert (tmp_path / "rimsavexray-report.html").is_file()
 
 
+def test_double_click_pauses_before_closing(monkeypatch, tmp_path, capsys):
+    """A zero-argv launch with a tty holds the window open; with argv it exits."""
+    save = tmp_path / "Colony.rws"
+    save.write_text(build_save(), encoding="utf-8")
+    monkeypatch.setattr("rimsavexray.cli.saves_dir", lambda: tmp_path)
+    monkeypatch.setattr("rimsavexray.discover.saves_dir", lambda: tmp_path)
+    monkeypatch.setattr("sys.stdin", type("FakeStdin", (), {"isatty": lambda self: True})())
+    prompts = []
+    monkeypatch.setattr("builtins.input", lambda prompt="": prompts.append(prompt) or "1")
+    monkeypatch.chdir(tmp_path)
+    assert main([]) == 0
+    assert any("Press Enter to close" in p for p in prompts)
+
+
+def test_no_pause_with_arguments(monkeypatch, tmp_path, capsys):
+    save = tmp_path / "Colony.rws"
+    save.write_text(build_save(), encoding="utf-8")
+    monkeypatch.setattr("rimsavexray.cli.saves_dir", lambda: tmp_path)
+    monkeypatch.setattr("sys.stdin", type("FakeStdin", (), {"isatty": lambda self: True})())
+    calls = []
+    monkeypatch.setattr("builtins.input", lambda prompt="": calls.append(prompt) or "1")
+    code = main([str(save), "--out", "none"])
+    assert code == 0
+    assert calls == []  # argv present: no prompt, no pause
+
+
 def test_interactive_prompt_rejects_then_accepts(monkeypatch, tmp_path, capsys):
     save = tmp_path / "Colony.rws"
     save.write_text(build_save(), encoding="utf-8")
@@ -139,6 +166,7 @@ def test_interactive_prompt_rejects_then_accepts(monkeypatch, tmp_path, capsys):
     monkeypatch.setattr("sys.stdin", type("FakeStdin", (), {"isatty": lambda self: True})())
     answers = iter(["not a save", "1"])
     monkeypatch.setattr("builtins.input", lambda _prompt: next(answers))
+    monkeypatch.setattr("rimsavexray.cli._pause_if_double_clicked", lambda raw: None)
     monkeypatch.chdir(tmp_path)
     code = main([])
     out = capsys.readouterr().out

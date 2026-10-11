@@ -25,10 +25,11 @@ any RimWorld save back to 1.3.
 
 The easy way is `rimsavexray.exe` from the
 [latest release](https://github.com/Booyaka101/rimsave-xray/releases/latest).
-It needs nothing else installed. Double-click it and it lists your saves and
-asks which one to scan. The exe isn't signed, so Windows SmartScreen may warn
-the first time ("More info", then "Run anyway"). If something blocks unsigned
-programs outright, the pip install below works around that.
+It needs nothing else installed. Double-click it and it lists your saves,
+asks which one to scan, shows the summary, and waits for Enter before the
+window closes. The exe isn't signed, so Windows SmartScreen may warn
+the first time ("More info", then "Run anyway"). If something blocks
+unsigned programs outright, the pip install below works around that.
 
 With Python 3.11 or newer from
 [python.org](https://www.python.org/downloads/) (tick "Add python.exe to PATH"

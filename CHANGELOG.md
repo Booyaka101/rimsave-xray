@@ -9,6 +9,8 @@ Review pass over 1.0.0.
   xpath selectors quoting `defName="X"` were and stay references, not defs.
 - The terminal summary names the top three mods by bytes and the count of
   defs no installed mod defines.
+- The double-clicked exe now holds its window open ("Press Enter to close")
+  after scanning or failing; launches with arguments exit as before.
 - A gzip save cut off mid-stream is now a message ("truncated or corrupt,
   try the previous autosave") instead of an EOFError traceback.
 - Text capture inside one leaf is capped by total length, not by callback
