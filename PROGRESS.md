@@ -1,7 +1,22 @@
 # rimsave-xray progress
 
-State: v1.3.0 complete and committed. All 88 tests pass locally, including
-the 400 MB scale gate. Loops so far: 1.1.0 (span/gzip/cap bug fixes, Patches
+SHIPPED 2026-10-12. v1.3.0 is released and published:
+
+- Repo: https://github.com/Booyaka101/rimsave-xray (main, all CI green on
+  the tagged commit 0f20054)
+- Release with the exe:
+  https://github.com/Booyaka101/rimsave-xray/releases/tag/v1.3.0
+- PyPI: https://pypi.org/project/rimsavexray/1.3.0/ (verified through
+  /simple/ and a fresh-venv install that scanned a fixture)
+- Cross-link: https://github.com/Booyaka101/rimbisect/pull/7 (green, left
+  open for the owner to merge)
+
+The first push exposed two tests that assumed this machine (a hardcoded
+Windows path, and a summary-line test that needed a locally installed
+game); both were made environment-independent before tagging. CI was
+verified green on the exact tagged commit through the check-runs API.
+
+State: v1.3.0. All 88 tests pass locally, including the 400 MB scale gate. Loops so far: 1.1.0 (span/gzip/cap bug fixes, Patches
 attribution, double-click pause), 1.2.0 (component Class measurement,
 steam-id folder fallback), 1.3.0 (component-share rule that caught a
 1.69 MB trading manager on the first real modded save, determinism test,
