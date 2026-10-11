@@ -3,18 +3,26 @@
 SHIPPED 2026-10-12. v1.3.0 is released and published:
 
 - Repo: https://github.com/Booyaka101/rimsave-xray (main, all CI green on
-  the tagged commit 0f20054)
+  the tagged commit 0f20054 and on every commit since; topics set:
+  rimworld, rimworld-mod, save-file, performance, profiler, save-bloat)
 - Release with the exe:
   https://github.com/Booyaka101/rimsave-xray/releases/tag/v1.3.0
 - PyPI: https://pypi.org/project/rimsavexray/1.3.0/ (verified through
   /simple/ and a fresh-venv install that scanned a fixture)
-- Cross-link: https://github.com/Booyaka101/rimbisect/pull/7 (green, left
-  open for the owner to merge)
+- Cross-link: rimbisect PR #7 merged (squash, 14ebc3a); both repos now
+  point at each other
 
 The first push exposed two tests that assumed this machine (a hardcoded
 Windows path, and a summary-line test that needed a locally installed
 game); both were made environment-independent before tagging. CI was
 verified green on the exact tagged commit through the check-runs API.
+
+Left for the owner (needs your voice, not mine): the first community
+post. The best first step is a reply in the Steam thread where save bloat
+comes up (steamcommunity.com/app/294100/discussions/0/600781777414405622),
+saying what the tool is, that it is read-only, and linking the release.
+A draft was handed over with the session summary; nothing gets posted
+without your go.
 
 State: v1.3.0. All 88 tests pass locally, including the 400 MB scale gate. Loops so far: 1.1.0 (span/gzip/cap bug fixes, Patches
 attribution, double-click pause), 1.2.0 (component Class measurement,
