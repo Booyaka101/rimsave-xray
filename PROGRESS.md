@@ -1,13 +1,14 @@
 # rimsave-xray progress
 
-State: v1.1.0 complete and committed. All 79 tests pass locally, including
-the 400 MB scale gate. The 1.1.0 loop was a review pass over 1.0.0: it
-fixed the self-closing `<maps/>` span bug, the truncated-gzip traceback,
-and the capture-cap counting bug, added Patches/ def attribution, the
-top-mods and unattributed summary lines, the double-click window pause,
-and single-sourced the version (dynamic = ["version"] off
-`rimsavexray.__version__`, after the pyproject pin drifted from the
-package).
+State: v1.2.0 complete and committed. All 84 tests pass locally, including
+the 400 MB scale gate. Loops so far: 1.1.0 (review pass: span/gzip/cap bugs,
+Patches attribution, summary lines, double-click pause, single-sourced
+version) and 1.2.0 (component Class measurement, steam-id folder fallback,
+collapsed not-installed row, drift-check component movers). On a real
+815-mod save the component table surfaced a 1.69 MB trading-manager
+component the unattributed bucket used to hide, and the drift checker
+caught the owner's own Convergence overseer component growing 732 bytes
+per in-game day.
 
 ## Verified working (real runs, not unit claims)
 

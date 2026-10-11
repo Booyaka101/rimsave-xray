@@ -6,8 +6,7 @@ mod), then check whether your build made the save heavier.
     py examples/save-drift-check.py Saves/Autosave-5.rws Saves/Autosave-4.rws
     py examples/save-drift-check.py old.rws new.rws --max-growth-pct 2
 
-Exit codes: 0 within budget, 2 over budget or unreadable, 3 different
-colonies (compared anyway, but say so).
+Exit codes: 0 within budget, 2 over budget or unreadable.
 """
 
 from __future__ import annotations
@@ -55,7 +54,6 @@ def main(argv: list[str] | None = None) -> int:
 
     if old.game_version != new.game_version:
         print(f"note: gameVersion changed: {old.game_version} -> {new.game_version}")
-    same_colony = old.ticks_game == new.ticks_game or not old.ticks_game or not new.ticks_game
     ticks_old = int(old.ticks_game) if old.ticks_game.isdigit() else 0
     ticks_new = int(new.ticks_game) if new.ticks_game.isdigit() else 0
     if ticks_old and ticks_new and ticks_new < ticks_old:
@@ -101,6 +99,15 @@ def main(argv: list[str] | None = None) -> int:
         print("biggest shrinkers")
         for def_name, delta in shrunk:
             print(f"  {def_name:28s} {_signed(delta):>12}")
+
+    comp_movers = sorted(
+        ((cls, new.component_bytes.get(cls, 0) - old.component_bytes.get(cls, 0))
+         for cls in set(old.component_bytes) | set(new.component_bytes)),
+        key=lambda kv: -abs(kv[1]))[:5]
+    if any(delta for _cls, delta in comp_movers):
+        print("\ncomponents (biggest movers)")
+        for cls, delta in comp_movers:
+            print(f"  {cls:36s} {_signed(delta):>12}")
 
     if game is not None:
         old_att, new_att = attribute(old, game), attribute(new, game)

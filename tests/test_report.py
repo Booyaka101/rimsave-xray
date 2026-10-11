@@ -29,6 +29,7 @@ def test_html_contains_required_sections(demosave1_scan):
             "Mods by bytes owned",
             "World pawns",
             "Things by Class",
+            "Components by Class",
             "Designations"):
         assert required in html, required
 
@@ -41,6 +42,32 @@ def test_html_has_mod_column_and_real_numbers(demosave1_scan):
     assert ">Human<" in html
     assert "1,589,091" in html          # Human's measured bytes
     assert "unattributed" in html       # fixture mods are not installed here
+
+
+def test_html_missing_mods_row(demosave1_scan):
+    """Mods in the save that are not installed appear as the brief's
+    '(unattributed: mod folder not found)' row, collapsed to one line."""
+    attribution, findings = full_run(demosave1_scan)
+    html = build_html(demosave1_scan, attribution, findings)
+    assert "mods in the save are not installed" in html
+    assert "(unattributed: mod folder not found)" in html
+
+
+def test_html_components_table(tmp_path):
+    from builders import build_save, map_block, thing_block
+    from rimsavexray.scan import stream_scan
+
+    comp = ('<components><li Class="Convergence.GameComponent_Sync">'
+            '<state>abc</state></li></components>')
+    xml = build_save(game_scalars=comp, maps_xml=map_block(0, thing_block("Wall")))
+    path = tmp_path / "c.rws"
+    path.write_bytes(xml.encode())
+    result = stream_scan(path)
+    attribution, findings = full_run(result)
+    html = build_html(result, attribution, findings)
+    assert "Convergence.GameComponent_Sync" in html
+    assert result.component_bytes["Convergence.GameComponent_Sync"] == len(
+        b'<li Class="Convergence.GameComponent_Sync"><state>abc</state></li>')
 
 
 def test_html_is_self_contained(demosave1_scan):

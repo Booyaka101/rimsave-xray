@@ -144,6 +144,34 @@ def test_patches_define_defs(tmp_path):
     assert attribution.by_def["Wall"].package_id == "ludeon.rimworld"
 
 
+def test_steam_id_folder_fallback(tmp_path):
+    """A save mod whose packageId no longer matches its About.xml still
+    attributes when the folder is named for its Workshop id."""
+    game = make_game(tmp_path)
+    # the folder claims a different packageId than the save lists
+    write_mod(game.mods_dir / "2038874626", "renamed.packageId", "Renamed", ["Gun"])
+    result = save_with_defs(tmp_path, ["dubwise.performanceanalyzer"],
+                            ["Gun"])
+    result.mods[0].steam_id = "2038874626"
+    attribution = attribute(result, game)
+    by_id = {m.package_id: m for m in attribution.mods}
+    assert by_id["dubwise.performanceanalyzer"].installed is True
+    assert attribution.by_def["Gun"].package_id == "dubwise.performanceanalyzer"
+
+
+def test_steam_id_zero_never_falls_back(tmp_path):
+    """steamId 0 means not a Workshop mod: no folder guessing."""
+    game = make_game(tmp_path)
+    (game.mods_dir / "0").mkdir(parents=True)
+    write_mod(game.mods_dir / "0", "whatever.else", "Whatever", ["Gun"])
+    result = save_with_defs(tmp_path, ["some.local.mod"], ["Gun"])
+    result.mods[0].steam_id = "0"
+    attribution = attribute(result, game)
+    by_id = {m.package_id: m for m in attribution.mods}
+    assert by_id["some.local.mod"].installed is False
+    assert attribution.unattributed_bytes == result.def_bytes["Gun"]
+
+
 def test_about_xml_case_insensitive_tags(tmp_path):
     """About.xml with different tag case still yields the packageId."""
     game = Game(root=tmp_path, version="1.6")

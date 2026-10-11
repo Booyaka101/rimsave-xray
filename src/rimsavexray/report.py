@@ -185,8 +185,10 @@ def _defs_rows(result: ScanResult, attribution: Attribution) -> str:
 def _mods_rows(result: ScanResult, attribution: Attribution) -> str:
     total = result.xml_bytes
     rows = []
+    missing = 0
     for mod in sorted(attribution.mods, key=lambda m: (-m.bytes, m.label)):
-        if mod.bytes == 0 and not mod.installed:
+        if not mod.installed:
+            missing += 1
             continue
         rows.append(
             f"<tr><td>{html.escape(mod.label)}</td>"
@@ -195,6 +197,12 @@ def _mods_rows(result: ScanResult, attribution: Attribution) -> str:
             f'<td class="n">{_mb(mod.bytes)}</td>'
             f'<td class="n">{_pct(mod.bytes, total)}</td>'
             f"<td>{_bar(mod.bytes, total)}</td></tr>")
+    if missing:
+        rows.append(
+            f"<tr><td class='muted'>{missing} mods in the save are not installed "
+            f"(unattributed: mod folder not found)</td>"
+            f"<td class='n muted'>-</td><td class='n muted'>-</td>"
+            f"<td class='n muted'>-</td><td class='n muted'>-</td><td></td></tr>")
     if attribution.unattributed_bytes:
         rows.append(
             f"<tr><td class='muted'>defs no installed mod defines "
@@ -203,6 +211,23 @@ def _mods_rows(result: ScanResult, attribution: Attribution) -> str:
             f'<td class="n">{_mb(attribution.unattributed_bytes)}</td>'
             f'<td class="n">{_pct(attribution.unattributed_bytes, total)}</td>'
             f"<td>{_bar(attribution.unattributed_bytes, total)}</td></tr>")
+    return "".join(rows)
+
+
+def _components_rows(result: ScanResult) -> str:
+    total = result.xml_bytes
+    rows = []
+    for cls, byte_count in sorted(result.component_bytes.items(), key=lambda kv: -kv[1])[:15]:
+        rows.append(
+            f"<tr><td class='mono'>{html.escape(cls)}</td>"
+            f'<td class="n">{result.components_by_class.get(cls, 0):,}</td>'
+            f'<td class="n">{_mb(byte_count)}</td>'
+            f'<td class="n">{_pct(byte_count, total)}</td>'
+            f"<td>{_bar(byte_count, total)}</td></tr>")
+    if len(result.component_bytes) > 15:
+        rows.append(f"<tr><td class='muted'>... {len(result.component_bytes) - 15} more</td>"
+                    f"<td class='n muted'>{sum(result.components_by_class.values()):,} total</td>"
+                    f"<td class='n muted'>-</td><td class='n muted'>-</td><td></td></tr>")
     return "".join(rows)
 
 
@@ -307,6 +332,13 @@ their inventories hold {result.world_pawn_inventory_items} items.</p>
 
 <h2>Thing comps by Class</h2>
 <table><tr><th>comp Class</th><th class="n">count</th></tr>{_counter_rows(dict(result.thing_comps.most_common()))}</table>
+
+<h2>Components by Class (game, world and map)</h2>
+<table><tr><th>component Class</th><th class="n">count</th><th class="n">bytes</th>
+<th class="n">share</th><th style="width:22%"></th></tr>
+{_components_rows(result)}</table>
+<p class="muted">Components hold a mod's save data that is not things: the Class
+namespace usually names the mod (PipeSystem.*, Convergence.*).</p>
 
 <h2>Designations</h2>
 <table><tr><th>designation</th><th class="n">count</th></tr>{_counter_rows(dict(result.designations.most_common()))}</table>

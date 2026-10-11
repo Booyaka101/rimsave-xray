@@ -21,8 +21,6 @@ from .scan import ModEntry, ScanResult
 
 VANILLA_LABEL = "Vanilla"
 UNATTRIBUTED = "(unattributed)"
-OFFICIAL_ORDER = ["ludeon.rimworld", "ludeon.rimworld.royalty", "ludeon.rimworld.ideology",
-                  "ludeon.rimworld.biotech", "ludeon.rimworld.anomaly", "ludeon.rimworld.odyssey"]
 
 _ABOUT_BOMS = (b"\xef\xbb\xbf", b"\xff\xfe", b"\xfe\xff", b"\xff\xfe\x00\x00", b"\x00\x00\xfe\xff")
 
@@ -158,6 +156,21 @@ def _scan_defs_parallel(folder: Path) -> list[tuple[str, list[str]]]:
     return list(zip((str(f) for f in files), results))
 
 
+def _folder_by_steam_id(game: Game | None, steam_id: str) -> Path | None:
+    """A mod folder named for its Workshop id: the layout Steam downloads
+    into the game's Mods folder. The fallback for saves whose modId no longer
+    matches the About.xml packageId (renamed or forked mods)."""
+    if game is None or not steam_id or steam_id == "0":
+        return None
+    for base in (game.mods_dir, game.workshop_dir):
+        if base is None:
+            continue
+        folder = base / steam_id
+        if (folder / "About").is_dir() or (folder / "Defs").is_dir():
+            return folder
+    return None
+
+
 class DefOwnerIndex:
     """defName -> owning mod package id, last writer in load order wins."""
 
@@ -206,16 +219,14 @@ def attribute(result: ScanResult, game: Game | None) -> Attribution:
     entries: list[ModEntry] = list(result.mods)
     package_ids = [m.package_id.lower() for m in entries]
     load_order = list(dict.fromkeys(package_ids))
-    folders: dict[str, Path] = {}
     by_package: dict[str, ModAttribution] = {}
     for entry in entries:
         pid = entry.package_id.lower()
         if pid in by_package:
             continue
+        folder = installed.get(pid) or _folder_by_steam_id(game, entry.steam_id)
         mod = ModAttribution(package_id=pid, name=entry.name, steam_id=entry.steam_id,
-                             installed=pid in installed)
-        if mod.installed:
-            mod.folder = installed[pid]
+                             installed=folder is not None, folder=folder)
         by_package[pid] = mod
         attribution.mods.append(mod)
 
@@ -223,9 +234,8 @@ def attribute(result: ScanResult, game: Game | None) -> Attribution:
     # The save's own mod list is the load order; walking it in that order
     # leaves redefined defs with their last writer, the way the game loads them.
     for pid in load_order:
-        folder = installed.get(pid)
-        if folder is not None:
-            owner_index.add_mod(pid, folder)
+        if by_package[pid].folder is not None:
+            owner_index.add_mod(pid, by_package[pid].folder)
 
     # def -> mod byte sums
     for def_name, byte_count in result.def_bytes.items():

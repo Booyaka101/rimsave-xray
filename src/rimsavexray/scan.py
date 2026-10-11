@@ -70,6 +70,8 @@ class ScanResult:
     def_bytes: dict[str, int] = field(default_factory=dict)
     things_by_class: Counter = field(default_factory=Counter)
     thing_comps: Counter = field(default_factory=Counter)
+    components_by_class: Counter = field(default_factory=Counter)
+    component_bytes: dict[str, int] = field(default_factory=dict)
     designations: Counter = field(default_factory=Counter)
     world_pawns_alive: int = 0
     world_pawns_dead: int = 0
@@ -130,6 +132,8 @@ class ScanResult:
             "defBytes": dict(sorted(self.def_bytes.items(), key=lambda kv: -kv[1])),
             "thingsByClass": dict(self.things_by_class.most_common()),
             "thingComps": dict(self.thing_comps.most_common()),
+            "componentsByClass": dict(self.components_by_class.most_common()),
+            "componentBytes": dict(sorted(self.component_bytes.items(), key=lambda kv: -kv[1])),
             "designations": dict(self.designations.most_common()),
             "worldPawns": {"alive": self.world_pawns_alive, "dead": self.world_pawns_dead,
                            "forcedKept": self.world_pawns_forced,
@@ -277,6 +281,14 @@ class _Scanner:
                      "depth": len(names), "def": None}
             entry["set_def"] = lambda v, e=entry: e.__setitem__("def", v.strip())
             ctx.append(entry)
+        elif name == "li" and "Class" in attrs and parent == "components":
+            # game, world and map components: the one place a mod's save
+            # footprint lives outside things (things use 'comps', not
+            # 'components', so the two never collide)
+            start = self.parser.CurrentByteIndex
+            ctx.append({"tag": name, "kind": "component", "start": start,
+                        "paired": not self._self_closing(start), "depth": len(names),
+                        "cls": attrs["Class"]})
         elif kind == "designation":
             if name == "def" and parent == "li" and n == top["depth"] + 1:
                 self._arm_text(top["set_def"])
@@ -376,6 +388,11 @@ class _Scanner:
             elif kind == "designation":
                 if entry["def"]:
                     result.designations[entry["def"]] += 1
+            elif kind == "component":
+                cls = entry["cls"]
+                result.components_by_class[cls] += 1
+                result.component_bytes[cls] = (result.component_bytes.get(cls, 0)
+                                               + (end - entry["start"]))
             elif kind == "faction":
                 if entry["load_id"]:
                     faction_ref = f"Faction_{entry['load_id']}"

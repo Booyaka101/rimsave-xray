@@ -176,6 +176,29 @@ def test_designations(tmp_path):
     assert dict(r.designations) == {"Hunt": 2, "CutPlant": 1}
 
 
+def test_components_by_class(tmp_path):
+    """Game/map components count by Class with exact byte spans, and a
+    thing's 'comps' holder stays out of the component table."""
+    game_comp = ('<components>'
+                 '<li Class="GameComponent_DebugTools" />'
+                 '<li Class="Convergence.GameComponent_Sync"><state>abc</state></li>'
+                 '</components>')
+    map_comp = ('<components><li Class="PipeSystem.AdvancedProcessorsManager">'
+                '<keys /></li></components>')
+    thing = ('<thing Class="ThingWithComps"><def>Gun</def><id>G1</id>'
+             '<comps><li Class="CompQuality"><quality>Good</quality></li></comps></thing>')
+    xml = build_save(game_scalars=game_comp, maps_xml=map_block(0, thing + map_comp))
+    r = stream_scan(write(tmp_path, xml))
+    assert dict(r.components_by_class) == {"GameComponent_DebugTools": 1,
+                                           "Convergence.GameComponent_Sync": 1,
+                                           "PipeSystem.AdvancedProcessorsManager": 1}
+    assert r.component_bytes["GameComponent_DebugTools"] == len(
+        b'<li Class="GameComponent_DebugTools" />')
+    assert r.component_bytes["Convergence.GameComponent_Sync"] == len(
+        b'<li Class="Convergence.GameComponent_Sync"><state>abc</state></li>')
+    assert dict(r.thing_comps) == {"CompQuality": 1}   # comps is not components
+
+
 def test_thing_comps_by_class(tmp_path):
     thing = ('<thing Class="ThingWithComps"><def>Gun</def><id>G1</id>'
              '<comps><li Class="CompQuality"><quality>Good</quality></li>'

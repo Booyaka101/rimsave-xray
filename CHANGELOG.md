@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.2.0 - 2026-10-12
+
+Second review loop.
+
+- Game, world and map components are now measured: count and exact bytes per
+  Class, in the report and in --json. This is where a mod's save data hides
+  when it is not things (on a real 815-mod save it surfaced a 1.69 MB
+  trading manager nobody could see before).
+- Mods whose About.xml packageId no longer matches the save's modId (renamed
+  or forked mods) attribute again when their folder is named for the
+  Workshop id, which is how Steam lays them out.
+- The report's mod table shows one collapsed row for the save's not-installed
+  mods instead of hiding them, with the "(unattributed: mod folder not
+  found)" wording.
+- examples/save-drift-check.py gained a components-movers section (it caught
+  a co-op mod's overseer component growing 732 bytes a day on a real save)
+  and lost a dead variable and a docstring lie about an exit code.
+
 ## 1.1.0 - 2026-10-12
 
 Review pass over 1.0.0.

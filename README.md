@@ -161,10 +161,11 @@ stream_scan` gives you the full result (sections, per-def bytes, world
 pawns) as data, and `--json` gives the same numbers without importing
 anything.
 
-One boundary to know: attribution covers things and world pawns, which is
-where save bloat lives. Data a mod keeps in game or map components lands
-in the section totals (and the unattributed bucket) rather than under the
-mod's name, because components are not things and carry no defName.
+One boundary to know: mod attribution covers things and world pawns, which
+is where save bloat lives. Data a mod keeps in game, world or map
+components is measured separately in the report's "Components by Class"
+table, with the Class namespace naming the mod (PipeSystem.*,
+Convergence.*), but it does not roll into the mod's byte total.
 
 ## Development
 
