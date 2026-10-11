@@ -139,6 +139,33 @@ counted where saves record them; saves rarely record any. The tool is
 strictly read-only and is not a mod manager, a save cleaner, or a mod:
 it tells you where the weight is, you decide what to do about it.
 
+## Using it while you build mods
+
+Any save from any loadout scans, and the drift between two saves of the same
+colony is often the interesting part while developing a mod: play a few days
+on the old build, save, swap to the new build, play the same stretch, then
+
+```
+py examples\save-drift-check.py old.rws new.rws --game "D:\...\RimWorld"
+```
+
+It prints the byte drift per section and per mod, the biggest growing and
+shrinking defs, and exits 2 when the save grew past a budget
+(`--max-growth-pct`, default 5), which makes it usable as a CI gate after a
+playtest. On a real autosave rotation it reads like a story: grass dying
+back for the season (-260 KB), a fire (BurnedTree -39 KB, Filth_Ash
++43 KB), quail arriving (+39 KB).
+
+rimsavexray is also a plain library: `from rimsavexray.scan import
+stream_scan` gives you the full result (sections, per-def bytes, world
+pawns) as data, and `--json` gives the same numbers without importing
+anything.
+
+One boundary to know: attribution covers things and world pawns, which is
+where save bloat lives. Data a mod keeps in game or map components lands
+in the section totals (and the unattributed bucket) rather than under the
+mod's name, because components are not things and carry no defName.
+
 ## Development
 
 ```

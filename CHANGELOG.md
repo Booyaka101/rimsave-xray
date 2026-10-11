@@ -11,6 +11,9 @@ Review pass over 1.0.0.
   defs no installed mod defines.
 - The double-clicked exe now holds its window open ("Press Enter to close")
   after scanning or failing; launches with arguments exit as before.
+- examples/save-drift-check.py: compare two saves of one colony (sections,
+  counters, biggest def movers, per-mod drift) with a growth budget for
+  use as a playtest/CI gate while building mods.
 - A gzip save cut off mid-stream is now a message ("truncated or corrupt,
   try the previous autosave") instead of an EOFError traceback.
 - Text capture inside one leaf is capped by total length, not by callback
