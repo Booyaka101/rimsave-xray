@@ -96,8 +96,8 @@ means it asks you first, with sizes and dates.
 ## How attribution works
 
 The scanner walks the save once with the standard library's streaming XML
-parser and never builds a tree, so a 400 MB save parses in about 17 seconds
-using around 40 MB of memory (there is a test that proves it). Every byte
+parser and never builds a tree, so a 400 MB save parses in well under a minute
+using under 50 MB of memory (there is a test that proves it). Every byte
 lands in exactly one section (meta, game, world, maps), every map thing and
 every world pawn is measured to the byte and attributed to its def.
 

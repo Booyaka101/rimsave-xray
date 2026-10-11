@@ -13,6 +13,8 @@ FILTH_LIMIT = 5000
 DEAD_APPAREL_LIMIT = 2000
 MOD_SHARE_LIMIT = 0.15
 FILE_SIZE_LIMIT = 150 * 1024 * 1024
+VANILLA_IDS = ("ludeon.rimworld", "ludeon.rimworld.royalty", "ludeon.rimworld.ideology",
+               "ludeon.rimworld.biotech", "ludeon.rimworld.anomaly", "ludeon.rimworld.odyssey")
 
 
 @dataclass
@@ -90,8 +92,6 @@ def mod_bytes_rule(result: ScanResult, attribution: Attribution) -> list[Finding
     findings: list[Finding] = []
     if total == 0:
         return findings
-    vanilla_ids = ("ludeon.rimworld", "ludeon.rimworld.royalty", "ludeon.rimworld.ideology",
-                   "ludeon.rimworld.biotech", "ludeon.rimworld.anomaly", "ludeon.rimworld.odyssey")
     from .discover import VANILLA_PACKAGE_IDS
     for mod in attribution.mods:
         if mod.bytes == 0:
@@ -99,8 +99,8 @@ def mod_bytes_rule(result: ScanResult, attribution: Attribution) -> list[Finding
         share = mod.bytes / total
         if share > MOD_SHARE_LIMIT:
             display = (f"Vanilla ({VANILLA_PACKAGE_IDS[mod.package_id]})"
-                       if mod.package_id in vanilla_ids else (mod.name or mod.package_id))
-            vanilla = " (vanilla content)" if mod.package_id in vanilla_ids else ""
+                       if mod.package_id in VANILLA_IDS else (mod.name or mod.package_id))
+            vanilla = " (vanilla content)" if mod.package_id in VANILLA_IDS else ""
             findings.append(Finding(
                 "save-bytes-by-mod", "high",
                 f"Mod {display} owns {_mb(mod.bytes)} "

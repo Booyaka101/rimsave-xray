@@ -43,19 +43,22 @@ def _prompt_save() -> Path:
         size = p.stat().st_size / (1 << 20)
         when = time.strftime("%Y-%m-%d %H:%M", time.localtime(p.stat().st_mtime))
         print(f"  {i:2d}. {p.name}  ({size:.1f} MB, {when})")
-    while True:
-        answer = input(f"Scan which save? [1-{len(saves)}, Enter = 1, or a file path] ").strip().strip('"')
-        if not answer:
-            return saves[0]
-        if answer.isdigit() and 1 <= int(answer) <= len(saves):
-            return saves[int(answer) - 1]
-        candidate = Path(answer).expanduser()
-        if candidate.is_file():
-            return candidate
-        try:
-            return resolve_save(answer)
-        except UserError:
-            print(f"  {answer}: not a number from the list, nor an existing .rws file. Try again.")
+    try:
+        while True:
+            answer = input(f"Scan which save? [1-{len(saves)}, Enter = 1, or a file path] ").strip().strip('"')
+            if not answer:
+                return saves[0]
+            if answer.isdigit() and 1 <= int(answer) <= len(saves):
+                return saves[int(answer) - 1]
+            candidate = Path(answer).expanduser()
+            if candidate.is_file():
+                return candidate.resolve()
+            try:
+                return resolve_save(answer)
+            except UserError:
+                print(f"  {answer}: not a number from the list, nor an existing .rws file. Try again.")
+    except EOFError:
+        raise UserError("no save chosen; nothing was scanned.") from None
 
 
 def _writable_report_path(path: str) -> Path:

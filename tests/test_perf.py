@@ -21,9 +21,12 @@ pytestmark = pytest.mark.slow
 def _peak_rss() -> int:
     if sys.platform == "win32":
         import ctypes
+        import ctypes.wintypes
+
+        k32 = ctypes.windll.kernel32
 
         class PMC(ctypes.Structure):
-            _fields_ = [("cb", ctypes.c_uint32), ("PageFaultCount", ctypes.c_uint32),
+            _fields_ = [("cb", ctypes.wintypes.DWORD), ("PageFaultCount", ctypes.wintypes.DWORD),
                         ("PeakWorkingSetSize", ctypes.c_size_t),
                         ("WorkingSetSize", ctypes.c_size_t),
                         ("QuotaPeakPagedPoolUsage", ctypes.c_size_t),
@@ -33,10 +36,15 @@ def _peak_rss() -> int:
                         ("PagefileUsage", ctypes.c_size_t),
                         ("PeakPagefileUsage", ctypes.c_size_t)]
 
+        # the pseudo-handle from GetCurrentProcess is rejected here; open the
+        # process properly to get a real one
+        handle = k32.OpenProcess(0x0400 | 0x0010, False, k32.GetCurrentProcessId())
         pmc = PMC()
         pmc.cb = ctypes.sizeof(PMC)
-        ctypes.windll.psapi.GetProcessMemoryInfo(
-            ctypes.windll.kernel32.GetCurrentProcess(), ctypes.byref(pmc), pmc.cb)
+        ok = k32.K32GetProcessMemoryInfo(handle, ctypes.byref(pmc), pmc.cb)
+        k32.CloseHandle(handle)
+        if not ok:
+            pytest.fail("could not measure RSS on this system")
         return int(pmc.PeakWorkingSetSize)
     import resource
     return resource.getrusage(resource.RUSAGE_SELF).ru_maxrss * 1024
