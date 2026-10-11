@@ -116,6 +116,34 @@ def test_world_pawn_defs_attributed(tmp_path):
     assert attribution.by_def["Human"].bytes == result.def_bytes["Human"]
 
 
+def test_patches_define_defs(tmp_path):
+    """A PatchOperationAdd whose <value> holds a <defName> defines that def;
+    an xpath selector quoting defName="X" does not."""
+    game = make_game(tmp_path)
+    mod = game.mods_dir / "Patcher"
+    write_mod(mod, "patcher.mod", "Patcher", [])
+    patches = mod / "Patches"
+    patches.mkdir(parents=True, exist_ok=True)
+    (patches / "P.xml").write_text(
+        '<?xml version="1.0" encoding="utf-8"?>\n<PatchOperations>'
+        '<li Class="PatchOperationAdd"><xpath>/Defs</xpath>'
+        "<value><DesignationCategoryDef><defName>GR_SomeTab</defName></DesignationCategoryDef></value>"
+        "</li>"
+        '<li Class="PatchOperationReplace">'
+        "<xpath>/Defs/ThingDef[defName=\"Wall\"]/label</xpath>"
+        "<value><label>changed</label></value>"
+        "</li>"
+        "</PatchOperations>", encoding="utf-8")
+    # only GR_SomeTab is a def the mod defines; "Wall" is a selector reference
+    write_mod(game.data_dir / "Core", "ludeon.rimworld", "Core", ["Wall"])
+    result = save_with_defs(tmp_path, ["ludeon.rimworld", "patcher.mod"],
+                            ["GR_SomeTab", "Wall"])
+    attribution = attribute(result, game)
+    by_id = {m.package_id: m for m in attribution.mods}
+    assert by_id["patcher.mod"].bytes == result.def_bytes["GR_SomeTab"]
+    assert attribution.by_def["Wall"].package_id == "ludeon.rimworld"
+
+
 def test_about_xml_case_insensitive_tags(tmp_path):
     """About.xml with different tag case still yields the packageId."""
     game = Game(root=tmp_path, version="1.6")

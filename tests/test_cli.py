@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import gzip
 import json
 import time
 from pathlib import Path
@@ -9,6 +10,7 @@ from pathlib import Path
 import pytest
 
 from rimsavexray.cli import main
+from rimsavexray import __version__
 
 from builders import build_save, map_block, thing_block
 from conftest import FIXTURES
@@ -20,7 +22,7 @@ def test_json_schema_and_numbers(demosave1, tmp_path, capsys):
     assert code == 0
     payload = json.loads(capsys.readouterr().out)
 
-    assert payload["rimsavexray"] == "1.0.0"
+    assert payload["rimsavexray"] == __version__
     scan = payload["scan"]
     assert scan["gameVersion"] == "1.3.3200 rev726"
     assert scan["ticksGame"] == "41164371"   # tickManager's own, not per-pawn copies
@@ -98,10 +100,11 @@ def test_out_none_skips_report(demosave1, tmp_path, capsys, monkeypatch):
 
 
 def test_version_flag(capsys):
+    from rimsavexray import __version__
     with pytest.raises(SystemExit) as exc:
         main(["--version"])
     assert exc.value.code == 0
-    assert "rimsavexray 1.0.0" in capsys.readouterr().out
+    assert f"rimsavexray {__version__}" in capsys.readouterr().out
 
 
 def test_default_report_written_to_cwd(demosave1, tmp_path, monkeypatch):
@@ -141,6 +144,40 @@ def test_interactive_prompt_rejects_then_accepts(monkeypatch, tmp_path, capsys):
     out = capsys.readouterr().out
     assert code == 0
     assert "Try again." in out
+
+
+def test_list_flag(monkeypatch, tmp_path, capsys):
+    alpha = tmp_path / "Alpha.rws"
+    alpha.write_text(build_save(), encoding="utf-8")
+    beta = tmp_path / "Beta.rws.gz"
+    beta.write_bytes(gzip.compress(build_save().encode()))
+    monkeypatch.setattr("rimsavexray.cli.list_saves", lambda folder=None: [alpha, beta])
+    code = main(["--list"])
+    out = capsys.readouterr().out
+    assert code == 0
+    assert "Alpha.rws" in out and "Beta.rws.gz" in out
+
+
+def test_summary_prints_top_mods(demosave1, tmp_path, capsys):
+    code = main([str(demosave1), "--out", str(tmp_path / "r.html")])
+    out = capsys.readouterr().out
+    assert code == 0
+    assert "mods by bytes" in out
+
+
+def test_summary_names_unattributed_when_present():
+    from rimsavexray.mods import Attribution, ModAttribution
+    from rimsavexray.report import summary_lines
+    from rimsavexray.scan import MapInfo, ScanResult
+
+    result = ScanResult(path=Path("x.rws"), file_size=100, xml_bytes=100, compressed=False,
+                        sha256_before="a", sha256_after="a", sections={"maps": 100},
+                        maps=[MapInfo(0, 0, 100, things=1)])
+    attribution = Attribution(mods=[ModAttribution("a.b", "A", "0", True, bytes=90)])
+    attribution.unattributed_bytes = 10
+    attribution.unattributed_defs = 3
+    text = "\n".join(summary_lines(result, attribution, []))
+    assert "unattributed 3 defs (10 B) no installed mod defines" in text
 
 
 def test_fixture_present():

@@ -181,8 +181,10 @@ class _Scanner:
         self.fed = 0
         self.section_start: dict[str, int] = {}
         self.maps_end = 0
+        self._maps_paired = True
         self.map_starts: list[int] = []
         self.capture: list | None = None      # [sink, parts, tag]
+        self._capture_len = 0
         self._steam_sink = None
         self._name_sink = None
         self.result: ScanResult | None = None
@@ -223,6 +225,9 @@ class _Scanner:
             self.section_start[name] = self.parser.CurrentByteIndex
         elif n == 3 and parent == "game" and name in ("world", "maps"):
             self.section_start[name] = self.parser.CurrentByteIndex
+            if name == "maps":
+                # the end-event formula differs for <maps/> vs <maps>...</maps>
+                self._maps_paired = not self._self_closing(self.parser.CurrentByteIndex)
 
         # meta: game version and the three parallel mod lists
         if name == "gameVersion" and parent == "meta":
@@ -326,7 +331,8 @@ class _Scanner:
 
     def _end(self, name):
         if name == "maps" and len(self.names) == 3:
-            self.maps_end = self.parser.CurrentByteIndex + len(name) + 3
+            end = self.parser.CurrentByteIndex
+            self.maps_end = end + (len(name) + 3 if self._maps_paired else 0)
         ctx = self.ctx
         if ctx and ctx[-1]["tag"] == name and ctx[-1]["depth"] == len(self.names):
             entry = ctx.pop()
@@ -390,18 +396,20 @@ class _Scanner:
             sink, parts, _tag = self.capture
             sink("".join(parts))
             self.capture = None
+            self._capture_len = 0
             self.parser.CharacterDataHandler = None
         self.names.pop()
 
     def _chars(self, data):
-        parts = self.capture[1]
-        if len(parts) < CAPTURE_CAP:
-            parts.append(data)
+        if self._capture_len + len(data) <= CAPTURE_CAP:
+            self.capture[1].append(data)
+            self._capture_len += len(data)
 
     # -- text capture ------------------------------------------------------
 
     def _arm_text(self, sink):
         self.capture = [sink, [], self.names[-1]]
+        self._capture_len = 0
         self.parser.CharacterDataHandler = self._chars
 
     # -- mod list sinks ------------------------------------------------------
@@ -443,7 +451,13 @@ def stream_scan(path: Path) -> ScanResult:
     started = time.perf_counter()
     try:
         while True:
-            block = stream.read(CHUNK)
+            try:
+                block = stream.read(CHUNK)
+            except (OSError, EOFError, gzip.BadGzipFile) as exc:
+                # gzip streams raise EOFError mid-read when the file is cut off
+                raise UserError(f"{path} ends mid-stream ({exc}); the save is truncated or "
+                                "corrupt. RimWorld autosaves rotate, try the previous one."
+                                ) from exc
             if not block:
                 break
             scanner.fed += len(block)

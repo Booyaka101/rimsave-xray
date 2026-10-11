@@ -61,6 +61,8 @@ sections    maps is the biggest at 18.8 MB (44.1% of the save)
 top mod     Vanilla (Core) - 14.3 MB (33.6%)
 world pawns 27 tracked (6 alive, 21 dead)
 map things  37032 on 1 map(s): 466 floor items, 550 filth, 15 corpses
+mods by bytes Vanilla (Core) 14.3 MB (33.6%), Vanilla (Ideology) 19.5 KB (0.0%), Vanilla (Biotech) 2.0 KB (0.0%)
+unattributed 117 defs (3.5 MB) no installed mod defines
 
 fix list:
  [!] Mod Vanilla (Core) owns 14.3 MB (33.6% of the save) (vanilla content).
@@ -103,12 +105,12 @@ every world pawn is measured to the byte and attributed to its def.
 
 Def to mod comes from the save itself: the mod list in `meta/modIds` is the
 load order, and for every mod there that is installed, the mod's own
-`Defs/**/*.xml` files are read for the defNames they define. When two mods
-define the same defName, the last one in load order owns it, which is how the
-game resolves it too. Core, Royalty, Ideology, Biotech, Odyssey and Anomaly
-are grouped as Vanilla. Mods that are not installed are reported as
-"unattributed: mod folder not found", and the counts and byte totals stay
-exact either way.
+`Defs/**/*.xml` files are read for the defNames they define, along with any
+defs its `Patches/*.xml` insert or replace. When two mods define the same
+defName, the last one in load order owns it, which is how the game resolves
+it too. Core, Royalty, Ideology, Biotech, Odyssey and Anomaly are grouped
+as Vanilla. Mods that are not installed are reported as "unattributed: mod
+folder not found", and the counts and byte totals stay exact either way.
 
 Gzipped saves (`.rws.gz`, the format some backup and analysis tools write)
 open transparently; byte attribution is on the XML inside, the file size on

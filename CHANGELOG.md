@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.1.0 - 2026-10-12
+
+Review pass over 1.0.0.
+
+- Defs a mod inserts or rewrites through Patches/*.xml now attribute to that
+  mod (a PatchOperationAdd's `<value>` holding a `<defName>` defines it);
+  xpath selectors quoting `defName="X"` were and stay references, not defs.
+- The terminal summary names the top three mods by bytes and the count of
+  defs no installed mod defines.
+- A gzip save cut off mid-stream is now a message ("truncated or corrupt,
+  try the previous autosave") instead of an EOFError traceback.
+- Text capture inside one leaf is capped by total length, not by callback
+  count, so a pathological value cannot balloon memory past the cap.
+
 ## 1.0.0 - 2026-10-12
 
 First release.

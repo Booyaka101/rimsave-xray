@@ -18,6 +18,14 @@ def _mb(n: float) -> str:
     return f"{n / (1 << 20):.1f} MB"
 
 
+def _size(n: float) -> str:
+    if n >= 1 << 20:
+        return f"{n / (1 << 20):.1f} MB"
+    if n >= 1 << 10:
+        return f"{n / (1 << 10):.1f} KB"
+    return f"{n} B"
+
+
 def _pct(n: float, total: float) -> str:
     return f"{(n / total * 100):.1f}%" if total else "0%"
 
@@ -63,6 +71,14 @@ def summary_lines(result: ScanResult, attribution: Attribution, findings: list[F
         f"map things  {result.map_things} on {len(result.maps)} map(s): "
         f"{result.floor_items} floor items, {result.filth} filth, {result.corpses} corpses",
     ]
+    ranked = [m for m in sorted(attribution.mods, key=lambda m: -m.bytes) if m.bytes > 0]
+    if len(ranked) > 1:
+        lines.append("mods by bytes " + ", ".join(
+            f"{m.label} {_size(m.bytes)} ({_pct(m.bytes, result.xml_bytes)})"
+            for m in ranked[:3]))
+    if attribution.unattributed_defs:
+        lines.append(f"unattributed {attribution.unattributed_defs} defs "
+                     f"({_size(attribution.unattributed_bytes)}) no installed mod defines")
     if findings:
         lines.append("")
         lines.append("fix list:")

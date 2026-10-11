@@ -106,13 +106,21 @@ def scan_installed_mods(game: Game) -> dict[str, Path]:
 
 
 def _iter_def_files(folder: Path):
-    defs = folder / "Defs"
-    if not defs.is_dir():
-        return
-    for current, _dirs, files in os.walk(defs):
-        for fname in files:
-            if fname.lower().endswith(".xml"):
-                yield Path(current, fname)
+    """Every xml a mod can define or rewrite defs in: Defs/ and Patches/.
+
+    Patches count because a PatchOperationAdd/Replace whose <value> holds a
+    <defName> defines that def as surely as a Defs file does (xpath selectors
+    quote defNames as defName="X", never as <defName> elements, so the
+    element scan does not pick up mere references).
+    """
+    for sub in ("Defs", "Patches"):
+        base = folder / sub
+        if not base.is_dir():
+            continue
+        for current, _dirs, files in os.walk(base):
+            for fname in files:
+                if fname.lower().endswith(".xml"):
+                    yield Path(current, fname)
 
 
 _DEF_NAME = re.compile(rb"<defName>([^<]+)</defName>")

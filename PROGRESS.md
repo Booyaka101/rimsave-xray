@@ -1,7 +1,12 @@
 # rimsave-xray progress
 
-State: v1.0.0 complete and committed (git 62e37e0 plus final cleanups).
-All 70 tests pass locally, including the 400 MB scale gate.
+State: v1.1.0 complete and committed. All 77 tests pass locally, including
+the 400 MB scale gate. The 1.1.0 loop was a review pass over 1.0.0: it
+fixed the self-closing `<maps/>` span bug, the truncated-gzip traceback,
+and the capture-cap counting bug, added Patches/ def attribution, the
+top-mods and unattributed summary lines, and single-sourced the version
+(dynamic = ["version"] off `rimsavexray.__version__`, after the pyproject
+pin drifted from the package).
 
 ## Verified working (real runs, not unit claims)
 
@@ -9,10 +14,12 @@ All 70 tests pass locally, including the 400 MB scale gate.
   attribution cross-checked against independent regex counts of the same
   files (Plant 11169, Filth 62, Human 1589091 bytes, world pawns 29/97).
 - Scan of the owner's real saves: Autosave-1.rws (1.6.4850, 14 MB) and
-  Tribe of Estian.rws (1.5.4297, 42.6 MB, 815 mods) in about 1.6 s,
-  including mod attribution against D:\SteamLibrary's install.
-- The exe (dist/exe/rimsavexray.exe) run by bare save name next to the
-  fixture: 1.37 s, exit 0, report written, SHA-256 of input unchanged.
+  Tribe of Estian.rws (1.5.4297, 42.6 MB, 815 mods, 134 installed) in about
+  1.6 s, including mod attribution against D:\SteamLibrary's install;
+  15.0 MB attributed to mods, 3.6 MB across 117 defs unattributed (mods
+  not installed or defs added by tools the Defs/Patches scan can't see).
+- The exe (dist/exe/rimsavexray.exe, 1.1.0) run by bare save name next to
+  the fixture: exit 0, report written, SHA-256 of input unchanged.
 - Clean-path install: wheel built, installed into a fresh venv, scanned a
   fixture it had never seen.
 - 400 MB synthetic save: parses in 17-42 s depending on disk warmth, peak
@@ -66,13 +73,6 @@ and lag counts per mod, read-only."
 - v2 items from the brief: guided cleanup with automatic backup, save
   folder drift chart across autosaves, opt-in anonymized per-mod footprint
   stats.
-- Attribution gap: defs INSERTED by PatchOperations (PatchOperationAdd
-  writing a defName inside a Patches/*.xml) are not found by the Defs scan
-  and land in the unattributed bucket. Scanning Patches/ for inserted
-  defNames would tighten this; measured on the owner's saves the
-  unattributed share is small, so it shipped as documented behavior.
-- A per-mod "things in save" column sorted by bytes in the terminal output
-  (HTML already has it).
 - Cache the defName index per mod folder (mtime-keyed) so a cold first run
   on a 200-mod install scans Defs faster; the thread pool already hides
   most of the disk latency.

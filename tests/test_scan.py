@@ -195,6 +195,17 @@ def test_multi_map_spans(tmp_path):
     assert sum(m.bytes for m in r.maps) + min(m.start for m in r.maps) >= 0
 
 
+def test_self_closing_maps_section_exact(tmp_path):
+    """A world-only save with <maps/> still partitions every byte exactly."""
+    xml = build_save(maps_xml="")
+    assert "<maps/>" in xml or "<maps></maps>" in xml
+    path = write(tmp_path, xml)
+    r = stream_scan(path)
+    assert r.maps == []
+    assert sum(r.sections.values()) == r.xml_bytes == path.stat().st_size
+    assert r.sections.get("maps") in (None, 0, len("<maps/>"), len("<maps></maps>"))
+
+
 def test_future_tags_ignored(tmp_path):
     """Unknown 1.7-style elements never crash and change no counters."""
     xml = build_save(maps_xml=map_block(0, thing_block("Wall", ident=1)
@@ -263,3 +274,25 @@ def test_double_gzip_raises_friendly(tmp_path):
     path.write_bytes(gzip.compress(payload))
     with pytest.raises(UserError, match="XML"):
         stream_scan(path)
+
+
+def test_truncated_gzip_raises_friendly(tmp_path, demosave1):
+    """A gzip cut off mid-stream fails as a message, not an EOFError traceback."""
+    raw = demosave1.read_bytes()
+    path = tmp_path / "cut.rws.gz"
+    path.write_bytes(raw[: len(raw) // 2])
+    with pytest.raises(UserError, match="truncated|corrupt|mid-stream"):
+        stream_scan(path)
+
+
+def test_capture_capped_by_total_length(tmp_path):
+    """One leaf with absurd text cannot balloon memory: the capture stops
+    accumulating past CAPTURE_CAP instead of counting callbacks."""
+    from rimsavexray.scan import CAPTURE_CAP
+    big = "B" * (CAPTURE_CAP + 500000)
+    xml = build_save(game_scalars=f"<giant>{big}</giant>",
+                     maps_xml=map_block(0, thing_block("Wall", ident=1)))
+    r = stream_scan(write(tmp_path, xml))
+    # the scan completed and section sums still cover every byte
+    assert r.def_counts["Wall"] == 1
+    assert sum(r.sections.values()) == r.xml_bytes
