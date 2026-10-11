@@ -12,6 +12,7 @@ FLOOR_ITEM_LIMIT = 20000
 FILTH_LIMIT = 5000
 DEAD_APPAREL_LIMIT = 2000
 MOD_SHARE_LIMIT = 0.15
+COMPONENT_SHARE_LIMIT = 0.03
 FILE_SIZE_LIMIT = 150 * 1024 * 1024
 VANILLA_IDS = ("ludeon.rimworld", "ludeon.rimworld.royalty", "ludeon.rimworld.ideology",
                "ludeon.rimworld.biotech", "ludeon.rimworld.anomaly", "ludeon.rimworld.odyssey")
@@ -109,6 +110,26 @@ def mod_bytes_rule(result: ScanResult, attribution: Attribution) -> list[Finding
     return findings
 
 
+def component_share_rule(result: ScanResult) -> Finding | None:
+    """One component Class holding a large share of the save: the shape a
+    mod's quiet data accumulation takes (trading logs, stored menus, per-tick
+    histories), which the thing counters never show."""
+    total = result.xml_bytes
+    if total == 0:
+        return None
+    cls, byte_count = max(result.component_bytes.items(), key=lambda kv: kv[1],
+                          default=("", 0))
+    if byte_count / total <= COMPONENT_SHARE_LIMIT:
+        return None
+    count = result.components_by_class.get(cls, 0)
+    return Finding(
+        "component-bytes", "medium",
+        f"Component {cls} holds {_mb(byte_count)} ({byte_count / total * 100:.1f}% of the "
+        f"save), outside every thing counter. Fix: check that mod's settings for logs or "
+        "histories it keeps forever.",
+        detail=f"one {cls} instance" if count == 1 else f"{count} instances of {cls}.")
+
+
 def autosave_size_rule(result: ScanResult) -> Finding | None:
     size = result.file_size
     if size <= FILE_SIZE_LIMIT:
@@ -125,7 +146,8 @@ _ORDER = {"high": 0, "medium": 1, "info": 2}
 def evaluate(result: ScanResult, attribution: Attribution) -> list[Finding]:
     findings: list[Finding] = []
     for rule in (world_pawns_rule(result), floor_items_rule(result), filth_rule(result),
-                 apparel_on_corpses_rule(result), autosave_size_rule(result)):
+                 apparel_on_corpses_rule(result), component_share_rule(result),
+                 autosave_size_rule(result)):
         if rule is not None:
             findings.append(rule)
     findings.extend(mod_bytes_rule(result, attribution))

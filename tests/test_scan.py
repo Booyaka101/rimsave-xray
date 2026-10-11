@@ -275,6 +275,15 @@ def test_empty_file(tmp_path):
         stream_scan(path)
 
 
+def test_scan_is_deterministic(demosave1):
+    """Two scans of one file produce byte-identical results (mod list,
+    counters, byte attribution; parse_seconds is not part of the claim)."""
+    first = stream_scan(demosave1).to_dict()
+    second = stream_scan(demosave1).to_dict()
+    first["parseSeconds"] = second["parseSeconds"] = 0
+    assert first == second
+
+
 def test_bom_save(tmp_path):
     xml = build_save(maps_xml=map_block(0, thing_block("Wall", ident=1)))
     path = tmp_path / "bom.rws"

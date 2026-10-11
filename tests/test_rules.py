@@ -5,7 +5,8 @@ from __future__ import annotations
 from pathlib import Path
 
 from rimsavexray.mods import Attribution, ModAttribution
-from rimsavexray.rules import (apparel_on_corpses_rule, autosave_size_rule, evaluate,
+from rimsavexray.rules import (apparel_on_corpses_rule, autosave_size_rule,
+                               component_share_rule, evaluate,
                                filth_rule, floor_items_rule, mod_bytes_rule,
                                world_pawns_rule)
 from rimsavexray.scan import MapInfo, ScanResult
@@ -79,6 +80,25 @@ def test_mod_share_under_threshold_silent():
     r = make_result(xml_bytes=1000)
     attribution = make_attribution([("small.mod", "Small", 149)])
     assert mod_bytes_rule(r, attribution) == []
+
+
+def test_component_share_rule():
+    r = make_result(xml_bytes=1000, component_bytes={"VTE.TradingManager": 40},
+                    components_by_class=Counter({"VTE.TradingManager": 1}))
+    finding = component_share_rule(r)
+    assert finding.severity == "medium"
+    assert "Component VTE.TradingManager holds" in finding.message
+    assert "4.0% of the save" in finding.message
+
+
+def test_component_share_rule_quiet_under_threshold():
+    r = make_result(xml_bytes=1000, component_bytes={"Small.Comp": 29},
+                    components_by_class=Counter({"Small.Comp": 3}))
+    assert component_share_rule(r) is None
+
+
+def test_component_share_rule_empty_save():
+    assert component_share_rule(make_result()) is None
 
 
 def test_autosave_size_over_150mb():

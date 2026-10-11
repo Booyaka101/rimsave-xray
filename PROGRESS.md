@@ -1,14 +1,12 @@
 # rimsave-xray progress
 
-State: v1.2.0 complete and committed. All 84 tests pass locally, including
-the 400 MB scale gate. Loops so far: 1.1.0 (review pass: span/gzip/cap bugs,
-Patches attribution, summary lines, double-click pause, single-sourced
-version) and 1.2.0 (component Class measurement, steam-id folder fallback,
-collapsed not-installed row, drift-check component movers). On a real
-815-mod save the component table surfaced a 1.69 MB trading-manager
-component the unattributed bucket used to hide, and the drift checker
-caught the owner's own Convergence overseer component growing 732 bytes
-per in-game day.
+State: v1.3.0 complete and committed. All 88 tests pass locally, including
+the 400 MB scale gate. Loops so far: 1.1.0 (span/gzip/cap bug fixes, Patches
+attribution, double-click pause), 1.2.0 (component Class measurement,
+steam-id folder fallback), 1.3.0 (component-share rule that caught a
+1.69 MB trading manager on the first real modded save, determinism test,
+verified 1.6 planet layers do not multiply <world> elements, drift checker
+auto-discovers the install).
 
 ## Verified working (real runs, not unit claims)
 

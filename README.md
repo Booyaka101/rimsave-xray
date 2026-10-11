@@ -119,6 +119,7 @@ disk is shown separately.
 
 ## The rules
 
+Every message prints the counted number it fired on.
 | rule | fires when | says |
 | --- | --- | --- |
 | world-pawns | over 800 world pawns outside your faction | how many are tracked, dead, and holding apparel; dev-mode "Clean up world pawns" |
@@ -126,6 +127,7 @@ disk is shown separately.
 | filth | over 5000 filth | clean it or use a filth-clearing mod |
 | apparel-on-corpses | over 2000 apparel items on dead pawns | strip or destroy corpses |
 | save-bytes-by-mod | one mod over 15% of save bytes | which mod owns how many MB |
+| component-bytes | one component Class over 3% of save bytes | which mod component quietly holds the bytes |
 | autosave-size | file over 150 MB | load time and autosave hitch |
 
 Every message prints the counted number it fired on.

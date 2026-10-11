@@ -41,9 +41,14 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     game = None
-    if args.game:
+    try:
         from rimsavexray.discover import find_game
-        game = find_game(Path(args.game))
+        game = find_game(Path(args.game) if args.game else None)
+    except UserError as exc:
+        if args.game:
+            print(f"drift-check: {exc}")
+            return 2
+        print(f"note: mods not attributed ({exc})")
 
     try:
         old = stream_scan(Path(args.old))

@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.3.0 - 2026-10-12
+
+Third review loop.
+
+- New rule: one component Class holding over 3% of the save bytes names the
+  component and its share ("Component VanillaTradingExpanded.TradingManager
+  holds 1.6 MB (3.8% of the save)"). On the first real modded save it ran
+  against, this caught a trading manager nobody could see in the thing
+  counters.
+- Scans are now pinned deterministic by a test: two passes over one file
+  produce identical results.
+- Verified RimWorld 1.6 planet layers live in a layers dict under game, not
+  as extra <world> elements, so section attribution stays exact on Odyssey
+  saves.
+- examples/save-drift-check.py finds the install through Steam like the main
+  CLI when --game is not given, and attributes mod drift without being
+  asked twice.
+
 ## 1.2.0 - 2026-10-12
 
 Second review loop.
