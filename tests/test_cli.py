@@ -70,8 +70,8 @@ def test_summary_output(demosave1, tmp_path, capsys):
     assert "read-only" in out
 
 
-def test_missing_file_is_a_message_not_a_traceback(capsys):
-    code = main([r"Z:\nowhere\nope.rws"])
+def test_missing_file_is_a_message_not_a_traceback(tmp_path, capsys):
+    code = main([str(tmp_path / "definitely" / "missing.rws")])
     err = capsys.readouterr().err
     assert code == 2
     assert "rimsavexray:" in err
@@ -187,10 +187,29 @@ def test_list_flag(monkeypatch, tmp_path, capsys):
 
 
 def test_summary_prints_top_mods(demosave1, tmp_path, capsys):
+    """End-to-end plumbing only; the mods-bytes line itself is unit-tested
+    against constructed attribution so it does not depend on a local
+    RimWorld install."""
     code = main([str(demosave1), "--out", str(tmp_path / "r.html")])
-    out = capsys.readouterr().out
     assert code == 0
-    assert "mods by bytes" in out
+    assert (tmp_path / "r.html").is_file()
+
+
+def test_summary_names_top_mods_from_attribution():
+    from rimsavexray.mods import Attribution, ModAttribution
+    from rimsavexray.report import summary_lines
+    from rimsavexray.scan import MapInfo, ScanResult
+
+    result = ScanResult(path=Path("x.rws"), file_size=100, xml_bytes=100, compressed=False,
+                        sha256_before="a", sha256_after="a", sections={"maps": 100},
+                        maps=[MapInfo(0, 0, 100, things=1)])
+    attribution = Attribution(mods=[
+        ModAttribution("ludeon.rimworld", "Core", "0", True, bytes=90),
+        ModAttribution("brrainz.harmony", "Harmony", "0", True, bytes=7),
+    ])
+    text = "\n".join(summary_lines(result, attribution, []))
+    assert "mods by bytes Vanilla (Core) 90 B (90.0%), Harmony 7 B (7.0%)" in text
+    assert "unattributed" not in text  # nothing unattributed: no noise line
 
 
 def test_summary_names_unattributed_when_present():
