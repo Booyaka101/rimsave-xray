@@ -1,0 +1,20 @@
+# build / packaging
+build/
+dist/
+*.egg-info/
+exe-venv/
+.venv/
+
+# caches
+__pycache__/
+.pytest_cache/
+.cache/
+
+# local scratch and generated reports
+.scratch/
+rimsavexray-report.html
+report.html
+check.html
+
+# fixtures stay: the three MIT-licensed demosaves from dagpunk/rimhistory
+# (large generated scale-test files land in temp dirs, not here)

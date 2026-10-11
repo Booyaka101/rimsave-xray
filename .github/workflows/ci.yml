@@ -1,0 +1,86 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: python -m pip install -e . pytest
+      - run: python -m pytest -m "not slow"
+
+  test-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -e . pytest
+      - run: python -m pytest -m "not slow"
+
+  scale:
+    # the 400 MB synthetic-save gate: under 60 s, under 500 MB RSS
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -e . pytest
+      - run: python -m pytest tests/test_perf.py
+
+  package:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install build
+      - run: python -m build
+      - name: Install the wheel into a clean venv and scan a fixture
+        shell: bash
+        run: |
+          python -m venv clean
+          clean/Scripts/python -m pip install dist/*.whl
+          clean/Scripts/rimsavexray --version
+          clean/Scripts/rimsavexray "tests/fixtures/demosave 1.rws.gz" --out check.html
+          grep -F "Top 25 defs by bytes" check.html
+
+  exe:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build rimsavexray.exe from a clean venv
+        shell: bash
+        run: |
+          python -m venv exe-venv
+          exe-venv/Scripts/python -m pip install . "pyinstaller>=6.10,<7"
+          exe-venv/Scripts/python -m PyInstaller --onefile --console --name rimsavexray \
+            --workpath build/pyi --specpath build --distpath dist/exe src/rimsavexray/__main__.py
+      - name: Run the exe on a fixture
+        shell: bash
+        run: |
+          dist/exe/rimsavexray.exe --version
+          dist/exe/rimsavexray.exe "tests/fixtures/demosave 1.rws.gz" --out check.html
+          grep -F "Top 25 defs by bytes" check.html
+      - uses: actions/upload-artifact@v4
+        with:
+          name: exe
+          path: dist/exe/rimsavexray.exe
