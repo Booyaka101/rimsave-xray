@@ -66,6 +66,11 @@ and lag counts per mod, read-only."
 - v2 items from the brief: guided cleanup with automatic backup, save
   folder drift chart across autosaves, opt-in anonymized per-mod footprint
   stats.
+- Attribution gap: defs INSERTED by PatchOperations (PatchOperationAdd
+  writing a defName inside a Patches/*.xml) are not found by the Defs scan
+  and land in the unattributed bucket. Scanning Patches/ for inserted
+  defNames would tighten this; measured on the owner's saves the
+  unattributed share is small, so it shipped as documented behavior.
 - A per-mod "things in save" column sorted by bytes in the terminal output
   (HTML already has it).
 - Cache the defName index per mod folder (mtime-keyed) so a cold first run
