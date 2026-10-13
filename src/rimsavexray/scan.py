@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import gzip
 import hashlib
+import re
 import time
 from collections import Counter
 from dataclasses import dataclass, field
@@ -28,6 +29,32 @@ CHUNK = 1 << 20          # bytes fed to expat per Parse() call
 WINDOW = 8 << 20         # tail of the stream kept addressable for tag peeks
 CAPTURE_CAP = 1 << 16    # longest single text value captured (defs are short)
 GZIP_MAGIC = b"\x1f\x8b"
+
+# Structural vocabulary as observed in real saves back to 1.3 (children of
+# <savegame>, and children of <game>), measured across the three demosave
+# fixtures (1.3, 135 mods), three real 1.6 autosaves and a real 1.5 save
+# with 815 mods: the union is exactly this set. A block outside it in a
+# 1.7+ save is surfaced as new, never silently dropped.
+KNOWN_DEPTH2 = frozenset({"meta", "game"})
+KNOWN_GAME_CHILDREN = frozenset({
+    "analysisManager", "battleLog", "cameraMap", "components", "currentMapIndex",
+    "customXenogermDatabase", "customXenotypeDatabase", "dateNotifier",
+    "drugPolicyDatabase", "entityCodex", "foodRestrictionDatabase", "gameEnder",
+    "hiddenItemsManager", "history", "info", "letterStack", "maps", "outfitDatabase",
+    "playLog", "playSettings", "questManager", "readingPolicyDatabase",
+    "relationshipRecords", "researchManager", "rules", "scenario", "storyWatcher",
+    "storyteller", "studyManager", "taleManager", "tickManager",
+    "transportShipManager", "tutor", "uniqueIDsManager", "world",
+})
+
+
+def version_tuple(version: str) -> tuple[int, ...]:
+    """'1.7.4976 rev1043' -> (1, 7, 4976); unparseable -> (0,)."""
+    match = re.match(r"(\d+)\.(\d+)(?:\.(\d+))?", (version or "").strip())
+    if not match:
+        return (0,)
+    return tuple(int(part) for part in match.groups(default="0"))
+
 
 
 @dataclass
@@ -85,7 +112,15 @@ class ScanResult:
     player_faction_id: str = ""
     player_faction_def: str = ""
     faction_defs: dict[str, str] = field(default_factory=dict)
+    # structural blocks outside the known 1.3-1.6 vocabulary, 1.7+ saves only:
+    # name -> [count, total bytes]
+    unmapped_blocks: dict[str, list[int]] = field(default_factory=dict)
     parse_seconds: float = 0.0
+
+    @property
+    def is_waylith_save(self) -> bool:
+        """True for saves written by RimWorld 1.7 (the Waylith engine) or newer."""
+        return version_tuple(self.game_version) >= (1, 7, 0)
 
     @property
     def read_only_ok(self) -> bool:
@@ -135,6 +170,8 @@ class ScanResult:
             "componentsByClass": dict(self.components_by_class.most_common()),
             "componentBytes": dict(sorted(self.component_bytes.items(), key=lambda kv: -kv[1])),
             "designations": dict(self.designations.most_common()),
+            "unmappedBlocks": {name: {"count": entry[0], "bytes": entry[1]}
+                               for name, entry in sorted(self.unmapped_blocks.items())},
             "worldPawns": {"alive": self.world_pawns_alive, "dead": self.world_pawns_dead,
                            "forcedKept": self.world_pawns_forced,
                            "byFaction": dict(self.world_pawns_by_faction.most_common()),
@@ -191,6 +228,8 @@ class _Scanner:
         self._capture_len = 0
         self._steam_sink = None
         self._name_sink = None
+        self.struct_spans: dict[str, list[int]] = {}   # depth2/game-child name -> [count, bytes]
+        self._struct_open: dict[int, tuple[str, int, bool]] = {}  # depth -> (name, start, paired)
         self.result: ScanResult | None = None
         self.parser: expat.XMLParserType | None = None
 
@@ -223,6 +262,12 @@ class _Scanner:
         ctx = self.ctx
         top = ctx[-1] if ctx else None
         kind = top["kind"] if top else ""
+
+        # structural spans: children of <savegame> and of <game> only, so a
+        # block the report vocabulary has never seen can still be measured
+        if n == 2 or (n == 3 and parent == "game"):
+            start = self.parser.CurrentByteIndex
+            self._struct_open[n] = (name, start, not self._self_closing(start))
 
         # section boundaries: a contiguous partition of the whole file
         if n == 2 and name in ("meta", "game"):
@@ -342,7 +387,16 @@ class _Scanner:
         self.ctx.append(entry)
 
     def _end(self, name):
-        if name == "maps" and len(self.names) == 3:
+        depth = len(self.names)
+        opened = self._struct_open.pop(depth, None)
+        if opened is not None and opened[0] == name:
+            end = self.parser.CurrentByteIndex
+            if opened[2]:
+                end += len(name) + 3
+            entry = self.struct_spans.setdefault(name, [0, 0])
+            entry[0] += 1
+            entry[1] += max(0, end - opened[1])
+        if name == "maps" and depth == 3:
             end = self.parser.CurrentByteIndex
             self.maps_end = end + (len(name) + 3 if self._maps_paired else 0)
         ctx = self.ctx
@@ -528,6 +582,14 @@ def stream_scan(path: Path) -> ScanResult:
     else:
         display["(whole file)"] = result.xml_bytes
     result.sections = display
+
+    # 1.7+: structural blocks outside the 1.3-1.6 vocabulary are surfaced,
+    # never dropped. Older saves are reported exactly as before.
+    if result.is_waylith_save:
+        for name, (count, byte_count) in scanner.struct_spans.items():
+            known = name in KNOWN_DEPTH2 or name in KNOWN_GAME_CHILDREN
+            if not known and byte_count > 0:
+                result.unmapped_blocks[name] = [count, byte_count]
 
     # per-map spans: each map runs from its start to the next map's start
     ends = scanner.map_starts[1:] + [scanner.maps_end or result.xml_bytes]

@@ -1,5 +1,48 @@
 # Changelog
 
+## 1.4.1 - 2026-10-13
+
+Review loop over 1.4.0.
+
+- Byte-identity proof: the HTML report and terminal summary for a 1.6-and-
+  older save are now verified byte-for-byte identical to the 1.3.0 output
+  (the report template restructure had left one stray blank line; fixed).
+- The structural record now covers every depth, not just the section level:
+  across the 1.3-1.6 corpus (seven real saves) versus the two 1.7 fixtures,
+  the only genuinely new serialized field anywhere is wakeUpIfColonistClose
+  (a CompCanBeDormant field, absent from the 1.6 assembly); the four other
+  new-to-the-corpus names are transient pawn state the 1.6 engine already
+  had. Nothing structural changed at any depth.
+- The 1.7 structural vocabulary is re-measured against all seven pre-1.7
+  saves (three 1.3 demosaves, three real 1.6 autosaves, one real 1.5 save
+  with 815 mods): the union is exactly the shipped known-set, both ways.
+- New tests: the unmapped-block report surfaces (summary line, HTML table,
+  biggest-first ordering, absence for clean saves) and scan determinism on
+  both 1.7 fixtures.
+- save-drift-check.py states its budget line as a growth budget, so a save
+  that shrank reads "within budget (XML -18.85% vs a 5% growth budget)"
+  instead of the ambiguous old wording.
+
+## 1.4.0 - 2026-10-13
+
+RimWorld 1.7 (Waylith) save support.
+
+- 1.7 saves scan natively. Two real fixtures from the 1.7 unstable install
+  (build 1.7.4976) now pin this in the test suite: a brand-new colony saved
+  in 1.7, and the owner's actual 1.6 save loaded into 1.7 and re-saved there
+  (with two of its mods failing on 1.7, the migration path players hit).
+  Both parse with exact byte partitioning and no version errors.
+- The structural record, measured on those fixtures: 1.7 writes the same XML
+  shape as 1.6 - same root, same meta fields, the same 35 game sections,
+  same line-ending and layout conventions. No save-format changes to map.
+- Any structural block a future 1.7 build adds outside the vocabulary
+  measured on real saves back to 1.3 is now surfaced in the summary, report
+  and --json as "new in 1.7 - not yet mapped" with its element name and byte
+  weight, instead of being silently dropped. Saves from 1.6 and older are
+  reported exactly as before; nothing about their output changes.
+- Install discovery accepts the Waylith exe name (RimWorld.exe) alongside
+  RimWorldWin64.exe, so mod attribution keeps working on 1.7 installs.
+
 ## 1.3.0 - 2026-10-12
 
 Third review loop.

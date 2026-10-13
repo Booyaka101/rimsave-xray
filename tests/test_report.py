@@ -120,3 +120,36 @@ def test_rules_panel_holds_counts(demosave1_scan):
     for finding in findings:
         first_number = re.search(r"\d[\d,]*", finding.message).group(0)
         assert first_number in html
+
+
+def test_unmapped_report_surfaces():
+    """A 1.7 save with unmapped blocks gets the summary line and the HTML
+    table; a result without any gets neither, byte-for-byte."""
+    from rimsavexray.mods import Attribution
+    from rimsavexray.scan import MapInfo, ScanResult
+
+    def result_with(unmapped):
+        r = ScanResult(path=Path("x.rws"), file_size=1000, xml_bytes=1000,
+                       compressed=False, sha256_before="a", sha256_after="a",
+                       sections={"maps": 1000}, maps=[MapInfo(0, 0, 1000)],
+                       game_version="1.7.4976 rev1043")
+        r.unmapped_blocks = unmapped
+        return r
+
+    attribution = Attribution()
+    flagged = result_with({"waylithMagic": [2, 500]})
+    text = "\n".join(summary_lines(flagged, attribution, []))
+    assert "new in 1.7  waylithMagic - 2 block(s)" in text
+    assert "not yet mapped" in text
+    html = build_html(flagged, attribution, [])
+    assert "New in 1.7 - not yet mapped" in html
+    assert "waylithMagic" in html
+    assert "500" in html
+
+    clean = result_with({})
+    assert "not yet mapped" not in "\n".join(summary_lines(clean, attribution, []))
+    assert "New in 1.7" not in build_html(clean, attribution, [])
+    # biggest block first when several are unmapped
+    both = result_with({"aaa": [1, 100], "zzz": [1, 900]})
+    text = "\n".join(summary_lines(both, attribution, []))
+    assert text.index("zzz") < text.index("aaa")

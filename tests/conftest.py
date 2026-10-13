@@ -30,6 +30,31 @@ def demosave1() -> Path:
 
 
 @pytest.fixture(scope="session")
+def waylith_new() -> Path:
+    """A brand-new colony created and saved in RimWorld 1.7 (Waylith, unstable
+    build 1.7.4976) on this project's own machine, vanilla loadout."""
+    return fixture_path("waylith new colony.rws.gz")
+
+
+@pytest.fixture(scope="session")
+def waylith_new_scan(waylith_new):
+    return stream_scan(waylith_new)
+
+
+@pytest.fixture(scope="session")
+def waylith_migrated() -> Path:
+    """The owner's real 1.6.4850 save (Autosave-1, 8 mods) loaded in 1.7 and
+    re-saved there: the migration path players actually hit. The tick count
+    and mod list carried over from the 1.6 original."""
+    return fixture_path("waylith migrated save.rws.gz")
+
+
+@pytest.fixture(scope="session")
+def waylith_migrated_scan(waylith_migrated):
+    return stream_scan(waylith_migrated)
+
+
+@pytest.fixture(scope="session")
 def demosave1_scan(demosave1):
     return stream_scan(demosave1)
 

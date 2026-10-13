@@ -238,6 +238,69 @@ def test_future_tags_ignored(tmp_path):
     assert r.map_things == 1
 
 
+# -- 1.7 (Waylith): unknown structural blocks are surfaced, not dropped ------
+
+
+def test_version_tuple():
+    from rimsavexray.scan import version_tuple
+    assert version_tuple("1.7.4976 rev1043") == (1, 7, 4976)
+    assert version_tuple("1.6.4850 rev590") == (1, 6, 4850)
+    assert version_tuple("") == (0,)
+    assert version_tuple("not a version") == (0,)
+
+
+def _save_with_block(tmp_path, version: str, block: str):
+    xml = build_save(meta=f"<meta><gameVersion>{version}</gameVersion></meta>",
+                     maps_xml=map_block(0, thing_block("Wall", ident=1)),
+                     game_scalars=block)
+    return stream_scan(write(tmp_path, xml))
+
+
+def test_unmapped_block_surfaced_in_17_save(tmp_path):
+    """A block outside the 1.3-1.6 vocabulary is reported with its exact byte
+    weight in a 1.7 save, never silently dropped."""
+    block = '<waylithMagic><deep>abc</deep></waylithMagic>'
+    r = _save_with_block(tmp_path, "1.7.4976 rev1043", block)
+    assert r.unmapped_blocks == {"waylithMagic": [1, len(block.encode())]}
+    payload = r.to_dict()
+    assert payload["unmappedBlocks"]["waylithMagic"] == {
+        "count": 1, "bytes": len(block.encode())}
+
+
+def test_unmapped_depth2_block_surfaced(tmp_path):
+    """A new child of <savegame> (a sibling of <game>) is surfaced too."""
+    xml = build_save(meta=f"<meta><gameVersion>1.7.1 rev1</gameVersion></meta>",
+                     maps_xml=map_block(0, thing_block("Wall", ident=1)))
+    xml = xml.replace("</savegame>", "<waylithMeta>engine data</waylithMeta></savegame>")
+    r = stream_scan(write(tmp_path, xml))
+    assert "waylithMeta" in r.unmapped_blocks
+
+
+def test_known_structure_produces_no_unmapped_in_17_save(tmp_path):
+    """A 1.7 save whose structure matches the known vocabulary reports nothing:
+    the gate is structural, not the version number itself."""
+    r = _save_with_block(tmp_path, "1.7.4976 rev1043", "")
+    assert r.unmapped_blocks == {}
+    assert r.to_dict()["unmappedBlocks"] == {}
+
+
+def test_16_save_output_unchanged_by_new_block(tmp_path):
+    """The same unknown block in a 1.6 save changes nothing: 1.6 and older
+    reports stay byte-for-byte identical to the previous release."""
+    block = '<waylithMagic><deep>abc</deep></waylithMagic>'
+    r = _save_with_block(tmp_path, "1.6.4850 rev590", block)
+    assert r.unmapped_blocks == {}
+    assert r.to_dict()["unmappedBlocks"] == {}
+
+
+def test_unmapped_counts_repeated_blocks(tmp_path):
+    r = _save_with_block(tmp_path, "1.7.0 rev1",
+                         "<waylithMagic>a</waylithMagic><waylithMagic>bb</waylithMagic>")
+    assert r.unmapped_blocks["waylithMagic"][0] == 2
+    assert r.unmapped_blocks["waylithMagic"][1] == len(b"<waylithMagic>a</waylithMagic>"
+                                                        b"<waylithMagic>bb</waylithMagic>")
+
+
 def test_huge_single_text_node(tmp_path):
     big = "A" * (6 << 20)
     xml = build_save(maps_xml=map_block(0, thing_block("Wall", ident=1)),

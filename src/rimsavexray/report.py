@@ -79,6 +79,10 @@ def summary_lines(result: ScanResult, attribution: Attribution, findings: list[F
     if attribution.unattributed_defs:
         lines.append(f"unattributed {attribution.unattributed_defs} defs "
                      f"({_size(attribution.unattributed_bytes)}) no installed mod defines")
+    for name, (count, byte_count) in sorted(result.unmapped_blocks.items(),
+                                            key=lambda kv: -kv[1][1]):
+        lines.append(f"new in 1.7  {name} - {count} block(s), {_size(byte_count)} - "
+                     "not yet mapped; its bytes still count in the sections above")
     if findings:
         lines.append("")
         lines.append("fix list:")
@@ -150,6 +154,29 @@ def _section_rows(result: ScanResult) -> str:
             f'<td class="n">{_pct(byte_count, total)}</td>'
             f"<td>{_bar(byte_count, total, warn=name == 'maps' and byte_count > total * 0.6)}</td></tr>")
     return "".join(rows)
+
+
+def _unmapped_html(result: ScanResult) -> str:
+    """The 'new in 1.7 - not yet mapped' table; empty (byte-for-byte absent)
+    for saves with nothing unmapped, including every pre-1.7 save."""
+    if not result.unmapped_blocks:
+        return ""
+    total = result.xml_bytes
+    rows = "".join(
+        f"<tr><td class='mono'>{html.escape(name)}</td>"
+        f'<td class="n">{entry[0]:,}</td>'
+        f'<td class="n">{entry[1]:,}</td>'
+        f'<td class="n">{_mb(entry[1])}</td>'
+        f'<td class="n">{_pct(entry[1], total)}</td>'
+        f"<td>{_bar(entry[1], total)}</td></tr>"
+        for name, entry in sorted(result.unmapped_blocks.items(), key=lambda kv: -kv[1][1]))
+    return ('\n<h2>New in 1.7 - not yet mapped</h2>\n'
+            '<table><tr><th>block</th><th class="n">count</th><th class="n">bytes</th>'
+            '<th class="n"></th><th class="n">share</th><th style="width:22%"></th></tr>\n'
+            f'{rows}</table>\n'
+            '<p class="muted">Structural blocks this scanner\'s vocabulary (measured on saves '
+            'back to 1.3) does not contain. Their bytes are counted in the sections above; '
+            'mappings may extend as 1.7 stabilizes.</p>')
 
 
 def _maps_rows(result: ScanResult) -> str:
@@ -291,7 +318,7 @@ SHA-256 after scan:&nbsp; {result.sha256_after}
 <table><tr><th>section</th><th class="n">bytes</th><th class="n"></th><th class="n">share</th><th style="width:34%"></th></tr>
 {_section_rows(result)}</table>
 <p class="muted">"game" is the part before &lt;world&gt;; the world and every map are counted separately.</p>
-
+{_unmapped_html(result)}
 <h2>Maps</h2>
 <table><tr><th>map</th><th class="n">bytes</th><th class="n">things</th><th class="n">pawns</th>
 <th class="n">floor items</th><th class="n">filth</th><th class="n">corpses</th></tr>

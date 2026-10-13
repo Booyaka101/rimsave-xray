@@ -136,7 +136,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"\nOVER BUDGET: XML grew {growth_pct:.2f}% between these saves "
               f"(budget {args.max_growth_pct}%).")
         return 2
-    print(f"\nwithin budget ({growth_pct:+.2f}% of a {args.max_growth_pct}% budget).")
+    print(f"\nwithin budget (XML {growth_pct:+.2f}% vs a {args.max_growth_pct}% growth budget).")
     return 0
 
 

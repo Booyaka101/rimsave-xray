@@ -14,7 +14,8 @@ from pathlib import Path
 from .errors import UserError
 
 APP_ID = "294100"
-EXE_NAME = "RimWorldWin64.exe"
+# 1.6 and older ship RimWorldWin64.exe (Unity); 1.7 on Waylith ships RimWorld.exe.
+EXE_NAMES = ("RimWorld.exe", "RimWorldWin64.exe")
 SAVES_RELATIVE = Path("AppData", "LocalLow", "Ludeon Studios", "RimWorld by Ludeon Studios", "Saves")
 VANILLA_PACKAGE_IDS = {
     "ludeon.rimworld": "Core",
@@ -120,9 +121,9 @@ def find_game(explicit: Path | None = None) -> Game:
         root = explicit.expanduser().resolve()
         if not root.is_dir():
             raise UserError(f"--game {root}: no such folder.")
-        if not (root / EXE_NAME).is_file() and not (root / "Data").is_dir():
+        if not any((root / exe).is_file() for exe in EXE_NAMES) and not (root / "Data").is_dir():
             raise UserError(f"{root} does not look like a RimWorld install "
-                            f"(no {EXE_NAME}, no Data folder). Pass the RimWorld install folder with --game.")
+                            f"(no RimWorld.exe, no Data folder). Pass the RimWorld install folder with --game.")
         return Game(root, _read_version(root))
     steam = steam_root()
     if steam is None:
@@ -134,7 +135,7 @@ def find_game(explicit: Path | None = None) -> Game:
         libraries = [steam]
     for library in libraries:
         root = library / "steamapps" / "common" / "RimWorld"
-        if (root / EXE_NAME).is_file():
+        if any((root / exe).is_file() for exe in EXE_NAMES):
             return Game(root, _read_version(root))
     raise UserError(f"RimWorld (Steam app {APP_ID}) is not in any Steam library listed in {vdf}. "
                     "Pass the install folder with --game.")

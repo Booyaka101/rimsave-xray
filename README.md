@@ -20,8 +20,11 @@ file once and answers exactly that.
 
 ## Install
 
-You need Windows and RimWorld 1.5+ (1.6 included). The scan itself works on
-any RimWorld save back to 1.3.
+You need Windows and RimWorld 1.5+ (1.6 and the 1.7 unstable beta included).
+The scan itself works on any RimWorld save back to 1.3. The 1.7 fixtures in
+the test suite are from build 1.7.4976; 1.7 structural mappings may extend
+as the beta stabilizes toward the main branch, and anything not yet mapped
+in a 1.7 save is reported as such rather than guessed at.
 
 The easy way is `rimsavexray.exe` from the
 [latest release](https://github.com/Booyaka101/rimsave-xray/releases/latest).
@@ -154,7 +157,10 @@ py examples\save-drift-check.py old.rws new.rws --game "D:\...\RimWorld"
 It prints the byte drift per section and per mod, the biggest growing and
 shrinking defs, and exits 2 when the save grew past a budget
 (`--max-growth-pct`, default 5), which makes it usable as a CI gate after a
-playtest. On a real autosave rotation it reads like a story: grass dying
+playtest. It also answers version questions: point it at a pre-migration
+1.6 backup and the migrated 1.7 save and it shows exactly what the migration
+changed (on our real test save, 1.7 shed 2.7 MB, nearly all plants and
+filth). On a real autosave rotation it reads like a story: grass dying
 back for the season (-260 KB), a fire (BurnedTree -39 KB, Filth_Ash
 +43 KB), quail arriving (+39 KB).
 
@@ -179,7 +185,10 @@ py -m pytest -m "not slow"      # skip the 400 MB scale gate
 
 The three saves under `tests/fixtures/` are the MIT-licensed demosaves from
 [dagpunk/rimhistory](https://github.com/dagpunk/rimhistory/tree/main/test_data).
-The save-format paths the scanner relies on (meta, modIds, tickManager,
+The two `waylith *.rws.gz` fixtures were made for the 1.7 upgrade on this
+project's own machine from the real 1.7 unstable install: one new colony
+saved in 1.7, one real 1.6 save loaded into 1.7 and re-saved there. The
+save-format paths the scanner relies on (meta, modIds, tickManager,
 thing[@Class]/def, worldPawns) were cross-checked against those fixtures and
 against real 1.5 and 1.6 saves.
 
