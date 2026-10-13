@@ -1,5 +1,22 @@
 # rimsave-xray progress
 
+## 1.4.1 PUBLISHED 2026-10-13
+
+- Commit 9da1d95 on main; CI green on that exact commit (all jobs: the
+  3.11/3.12/3.13 matrix, linux, the 400 MB scale gate, package, exe).
+- GitHub Release with the exe attached:
+  https://github.com/Booyaka101/rimsave-xray/releases/tag/v1.4.1
+- PyPI 1.4.1 live, verified through /simple/ and a no-cache fresh-venv
+  install that printed 1.4.1 and scanned the waylith migrated fixture:
+  https://pypi.org/project/rimsavexray/1.4.1/
+- The exe was built locally with the CI PyInstaller recipe and smoke-tested
+  (--version plus a scan of the waylith new colony fixture whose report
+  contained the defs table) before attaching.
+
+Best first distribution step, owner's voice: a reply in the Steam thread
+used for 1.3.0 (steamcommunity.com/app/294100/discussions/0/600781777414405622)
+noting that 1.7-unstable saves already scan as of today's build.
+
 ## 1.4.1 review loop, same day: what the loop found and fixed
 
 Review findings, all verified by measurement:
